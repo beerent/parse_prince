@@ -2,20 +2,25 @@ import sys
 from pathlib import Path
 import csv
 
+def is_digit(element):
+  return any(i.isdigit() for i in element)
+
 def get_next_no_number(lines, i):
   badEntry = False
 
-  while "TAXABLE VALUE" not in lines[i] and "Fire Protection" not in lines[i]:
-    i+=1
-    
+  while True:
     if "******" in lines[i]:
       badEntry = True
       break
 
-    if badEntry:
-      badEntry = False
-      print ("BAD ENTRY FOUND")
-      return "", i
+    if "TAXABLE VALUE" in lines[i] or "Fire Protection" in lines[i]:
+      break
+
+    i+=1
+
+  if badEntry:
+    badEntry = False
+    return "", i
 
   i+=2
   return lines[i], i
@@ -23,30 +28,38 @@ def get_next_no_number(lines, i):
 def get_next_needs_number(lines, i):
   badEntry = False
 
-  while ("TAXABLE VALUE" not in lines[i] and "Fire Protection" not in lines[i]) or not any(j.isdigit() for j in lines[i+2]):
-    i+=1
-    
+  while True:
     if "******" in lines[i]:
       badEntry = True
       break
 
-    if badEntry:
-      badEntry = False
-      print ("BAD ENTRY FOUND")
-      return "", i
+    if ("TAXABLE VALUE" in lines[i] or "Fire Protection" in lines[i]) and is_digit(lines[i+2]):
+      break
+
+    i+=1
+
+  if badEntry:
+    badEntry = False
+    return "", i
 
   i+=2
   return lines[i], i
+
+def get_owner_address_zip(lines, i):
+  while "******" not in lines[i]:
+
+    line = lines[i].strip()
+    line_split = line.split(" ")
+
+    if len(line_split) >= 3 and is_digit(line_split[-1]) and len(line_split[-2]) == 2 and line_split[-3][-1] == ",":
+      return line, i
+    i+=1
+  return "",i
 
 def split_owner_address(address):
   city = address.split(",")[0]
   state = address.split(",")[1].strip().split(" ")[0]
   zip_code = address.split(",")[1].strip().split(" ")[1]
-  print (address)
-  print (city)
-  print (state)
-  print (zip_code)
-  print ()
 
   return city, state, zip_code
 
@@ -68,7 +81,7 @@ def parse(file: Path):
   with open(file) as f:
     lines = [line.rstrip() for line in f]
 
-  csv_file = str(file).split(".")[0] + "_results.csv"
+  csv_file = "results/" + str(file).split("/")[1].split(".")[0] + "_results.csv"
   init_csv_file(csv_file)
 
   property_city = lines[3].split(" ")[1]
@@ -78,17 +91,36 @@ def parse(file: Path):
     line = lines[i]
 
     if in_element:
-      if lines[i + 3] == "411 Apartment":
+      if len(lines) > i+4 and lines[i + 3] == "411 Apartment" and lines[i + 4] != "- CONDO":
 
         property_address = lines[i]
+        
         owner, i = get_next_no_number(lines, i)
+        if (owner == ""):
+          print ("ERROR: failed to parse address: ["+ property_address +"]")
+          exit(1)
+          continue;
+
         owner_address, i = get_next_needs_number(lines, i)
+        if (owner_address == ""):
+          print ("ERROR: failed to parse address: ["+ property_address +"]")
+          exit(1)
+          continue;
+
+        owner_address_zip, i = get_owner_address_zip(lines, i)
 
         po_box = None
-        owner_address_zip, i = get_next_needs_number(lines, i)
+        if (owner_address_zip == ""):
+          print ("ERROR: failed to parse address: ["+ property_address +"]")
+          continue;
+
         if "PO Box" in owner_address_zip:
           po_box = owner_address_zip
           owner_address_zip, i = get_next_needs_number(lines, i)
+          if (owner_address_zip == ""):
+            print ("ERROR: failed to parse address: ["+ property_address +"]")
+            exit(1)
+            continue;
 
         owner_address_city, owner_address_state, owner_address_zip = split_owner_address(owner_address_zip)
         write_to_file(
@@ -96,26 +128,22 @@ def parse(file: Path):
           property_address, property_city,
           owner, owner_address, po_box, owner_address_city, owner_address_state, owner_address_zip
         )
-      in_element = False
 
+      in_element = False
 
     if "*******" in line:
       in_element = True
 
-
-
-
 if __name__ == "__main__":
   if len(sys.argv) != 2:
-    print ("please enter the name of the file you would like the parse prince to parse.")
+    print ("please enter the name of the directory that contains files you want to parse.")
     print ("example:")
-    print ("  python3 parse_prince.py Alden.txt")
+    print ("  python3 parse_prince.py source")
     exit(1)
 
-  file = Path(sys.argv[1])
-  if not file.is_file():
-    print (sys.argv[1] + " is not a valid file :(. Did you enter the file name exactly?")
-    exit(1)
+  directory = Path(sys.argv[1])
 
-  parse(file)
+  files = list(directory.glob('**/*.txt'))
+  for file in files:
+    parse(file)
 
