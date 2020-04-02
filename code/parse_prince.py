@@ -89,11 +89,12 @@ def getOwnerAddressLineFourApartment(lines, i):
 def get_property_city(lines, file):
   property_city = ""
 
-  try:
-    property_city = lines[3].split(" ")[1]
-  except:
-    print ("[ERROR]  >>> failed to parse the city for the file " + str(file))
-    property_city = input("[ERROR]  >>> Please type it in and hit enter: ")
+  line_3_split = lines[3].split("-")
+
+  if len(line_3_split) == 2 and len(line_3_split[1]) > 0:
+    property_city = line_3_split[1].strip()
+  else:
+    property_city = lines[7]
 
   return property_city
 
