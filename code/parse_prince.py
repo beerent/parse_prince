@@ -86,6 +86,17 @@ def getOwnerAddressLineFourApartment(lines, i):
 
   return owner_address, i
 
+def get_property_city(lines, file):
+  property_city = ""
+
+  try:
+    property_city = lines[3].split(" ")[1]
+  except:
+    print ("[ERROR]  >>> failed to parse the city for the file " + str(file))
+    property_city = input("[ERROR]  >>> Please type it in and hit enter: ")
+
+  return property_city
+
 def init_csv_file(file):
   with open(file, 'w+', newline='') as outFile:
     writer = csv.writer(outFile)
@@ -107,7 +118,7 @@ def parse(file: Path):
   csv_file = "results/" + str(file).split("/")[1].split(".")[0] + "_results.csv"
   init_csv_file(csv_file)
 
-  property_city = lines[3].split(" ")[1]
+  property_city = get_property_city(lines, file)
 
   in_element = False
   for i in range(0, len(lines)):
@@ -122,26 +133,26 @@ def parse(file: Path):
       if lineFourApartment:
         owner, i = getOwnerLineFourApartment(lines, i)
         if (owner == ""):
-          print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+          print ("[WARN]   failed to parse address: ["+ property_address +"]")
           in_element = False
           continue;
 
         owner_address, i = getOwnerAddressLineFourApartment(lines, i)
         if (owner_address == ""):
-          print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+          print ("[WARN]   failed to parse address: ["+ property_address +"]")
           in_element = False
           continue;
           
       elif lineThreeApartment or lineTwoApartment:
         owner, i = get_next_no_number(lines, i)
         if (owner == ""):
-          print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+          print ("[WARN]   failed to parse address: ["+ property_address +"]")
           in_element = False
           continue;
 
         owner_address, i = get_next_needs_number(lines, i)
         if (owner_address == ""):
-          print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+          print ("[WARN]   failed to parse address: ["+ property_address +"]")
           in_element = False
           continue;
 
@@ -150,7 +161,7 @@ def parse(file: Path):
 
         po_box = None
         if (owner_address_zip == ""):
-          print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+          print ("[WARN]   failed to parse address: ["+ property_address +"]")
           in_element = False
           continue;
 
@@ -158,7 +169,7 @@ def parse(file: Path):
           po_box = owner_address_zip
           owner_address_zip, i = get_next_needs_number(lines, i)
           if (owner_address_zip == ""):
-            print ("[ERROR]  failed to parse address: ["+ property_address +"]")
+            print ("[WARN]   failed to parse address: ["+ property_address +"]")
             in_element = False
             continue;
 
