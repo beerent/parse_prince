@@ -93,8 +93,11 @@ def get_property_city(lines, file):
 
   if len(line_3_split) == 2 and len(line_3_split[1]) > 0:
     property_city = line_3_split[1].strip()
-  else:
+  elif "COUNTY TOWN" == lines[1]:
     property_city = lines[7]
+  else:
+    print ("[ERROR]  >>> failed to parse the city for the file " + str(file))
+    property_city = input("[ERROR]  >>> Please type it in and hit enter: ")
 
   return property_city
 
